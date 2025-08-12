@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"runtime"
 	"strings"
@@ -50,7 +51,7 @@ func main() {
 
 		if response.Erro {
 			w.WriteHeader(http.StatusBadRequest)
-			newError := newError(errors.New("Invalid ZIP code. The ZIP code must be 8 digits long."), http.StatusBadRequest)
+			newError := newError(errors.New("invalid zipcode. The zipcode must be 8 digits long"), http.StatusBadRequest)
 			json.NewEncoder(w).Encode(newError)
 			return
 		}
@@ -83,9 +84,47 @@ func main() {
 
 		if via.Erro {
 			w.WriteHeader(http.StatusNotFound)
-			newError := newError(errors.New("ZIP code not found.o"), http.StatusNotFound)
+			newError := newError(errors.New("zipcode not found"), http.StatusNotFound)
 			json.NewEncoder(w).Encode(newError)
 		}
+
+		apiKey := os.Getenv("WEATHER_API_KEY")
+		if apiKey == "" {
+			newError := newError(errors.New("server misconfiguration"), http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(newError)
+			return
+		}
+
+		city := via.Localidade
+		reqURL := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, city)
+		resp, err := http.Get(reqURL)
+
+		if err != nil || resp.StatusCode != http.StatusOK {
+			newError := newError(errors.New("error fetching weather data"), http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(newError)
+			return
+		}
+
+		defer resp.Body.Close()
+
+		var wr weatherApiResp
+
+		if err := json.NewDecoder(resp.Body).Decode(&wr); err != nil {
+			newError := newError(errors.New("error parsing weather response"), http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(newError)
+			return
+		}
+
+		c := wr.Current.TempC
+		f := c*1.8 + 32
+		k := c + 273
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]float64{
+			"temp_C": float64(c),
+			"temp_F": float64(f),
+			"temp_K": float64(k),
+		})
 
 	})
 	fmt.Println("Servidor rodando na porta 3000")
@@ -97,13 +136,13 @@ func cepValitation(cep string) (string, error) {
 	cep = strings.Replace(cep, "-", "", -1)
 
 	if len(cep) != 8 {
-		return "", errors.New("Invalid ZIP code. The ZIP code must be 8 digits long.")
+		return "", errors.New("invalid zipcode. The zipcode must be 8 digits long")
 	}
 
 	isNumeric := regexp.MustCompile(`^[0-9]+$`).MatchString(cep)
 
 	if !isNumeric {
-		return "", errors.New("Invalid ZIP code. The ZIP code must contain only numeric digits")
+		return "", errors.New("invalid zipcode. The zipcode must contain only numeric digits")
 	}
 
 	return cep, nil
@@ -114,7 +153,7 @@ func searchLocationByCEP(cep string) (CepApiResponseData, error) {
 
 	if err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify ZIP code location.")
+		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
 	}
 	defer res.Body.Close()
 
@@ -122,13 +161,13 @@ func searchLocationByCEP(cep string) (CepApiResponseData, error) {
 
 	if err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify ZIP code location.")
+		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
 	}
 
 	var apiResponse CepApiResponseData
 	if err = json.Unmarshal(body, &apiResponse); err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify ZIP code location.")
+		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
 	}
 
 	return apiResponse, nil
