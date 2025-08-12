@@ -140,8 +140,8 @@ func main() {
 		})
 
 	})
-	fmt.Println("Servidor rodando na porta 3000")
-	http.ListenAndServe(":3000", r)
+	fmt.Println("Servidor rodando na porta 8080")
+	http.ListenAndServe(":8080", r)
 }
 
 func cepValitation(cep string) (string, error) {
