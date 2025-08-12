@@ -35,8 +35,8 @@ func main() {
 		cep, err := cepValitation(cep)
 
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			newError := newError(err, http.StatusBadRequest)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			newError := newError(err, http.StatusUnprocessableEntity)
 			json.NewEncoder(w).Encode(newError)
 			return
 		}
@@ -52,8 +52,10 @@ func main() {
 			return
 		}
 
-		if response.Erro {
-			w.WriteHeader(http.StatusBadRequest)
+		isErro := response.Erro == "true"
+
+		if isErro {
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			newError := newError(errors.New("invalid zipcode. The zipcode must be 8 digits long"), http.StatusBadRequest)
 			json.NewEncoder(w).Encode(newError)
 			return
@@ -71,24 +73,27 @@ func main() {
 
 		cep, err := cepValitation(cep)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			newError := newError(err, http.StatusBadRequest)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			newError := newError(err, http.StatusUnprocessableEntity)
 			json.NewEncoder(w).Encode(newError)
 			return
 		}
 
 		via, err := searchLocationByCEP(cep)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			newError := newError(err, http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
+			newError := newError(err, http.StatusNotFound)
 			json.NewEncoder(w).Encode(newError)
 			return
 		}
 
-		if via.Erro {
+		isErro := via.Erro == "true"
+
+		if isErro {
 			w.WriteHeader(http.StatusNotFound)
-			newError := newError(errors.New("zipcode not found"), http.StatusNotFound)
+			newError := newError(errors.New("can not find zipcode"), http.StatusNotFound)
 			json.NewEncoder(w).Encode(newError)
+			return
 		}
 
 		apiKey := os.Getenv("WEATHER_API_KEY")
@@ -161,7 +166,7 @@ func searchLocationByCEP(cep string) (CepApiResponseData, error) {
 
 	if err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
+		return CepApiResponseData{}, errors.New("can not find zipcode")
 	}
 	defer res.Body.Close()
 
@@ -169,13 +174,13 @@ func searchLocationByCEP(cep string) (CepApiResponseData, error) {
 
 	if err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
+		return CepApiResponseData{}, errors.New("can not find zipcode")
 	}
 
 	var apiResponse CepApiResponseData
 	if err = json.Unmarshal(body, &apiResponse); err != nil {
 		log.Fatalln(err)
-		return CepApiResponseData{}, errors.New("Could not verify zipcode location.")
+		return CepApiResponseData{}, errors.New("can not find zipcode")
 	}
 
 	return apiResponse, nil
@@ -224,7 +229,7 @@ type CepApiResponseData struct {
 	Gia         string `json:"gia"`
 	Ddd         string `json:"ddd"`
 	Siafi       string `json:"siafi"`
-	Erro        bool   `json:"erro,omitempty"`
+	Erro        string `json:"erro,omitempty"`
 }
 
 type weatherApiResp struct {
