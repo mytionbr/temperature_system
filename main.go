@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"runtime"
@@ -91,18 +92,21 @@ func main() {
 		}
 
 		apiKey := os.Getenv("WEATHER_API_KEY")
-		fmt.Println("API Key:", apiKey)
 		if apiKey == "" {
+			w.WriteHeader(http.StatusInternalServerError)
 			newError := newError(errors.New("server misconfiguration"), http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(newError)
 			return
 		}
 
 		city := via.Localidade
-		reqURL := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, city)
+		cityEscaped := url.QueryEscape(city)
+		reqURL := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, cityEscaped)
+
 		resp, err := http.Get(reqURL)
 
 		if err != nil || resp.StatusCode != http.StatusOK {
+			w.WriteHeader(http.StatusInternalServerError)
 			newError := newError(errors.New("error fetching weather data"), http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(newError)
 			return
@@ -113,6 +117,7 @@ func main() {
 		var wr weatherApiResp
 
 		if err := json.NewDecoder(resp.Body).Decode(&wr); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			newError := newError(errors.New("error parsing weather response"), http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(newError)
 			return
