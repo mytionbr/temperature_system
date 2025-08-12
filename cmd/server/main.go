@@ -14,11 +14,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
 )
 
 var cep_api = "https://viacep.com.br/ws/%v/json"
 
 func main() {
+	_ = godotenv.Load()
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +91,7 @@ func main() {
 		}
 
 		apiKey := os.Getenv("WEATHER_API_KEY")
+		fmt.Println("API Key:", apiKey)
 		if apiKey == "" {
 			newError := newError(errors.New("server misconfiguration"), http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(newError)
