@@ -11,15 +11,20 @@ import (
 	"github.com/mytionbr/temperature_system/model"
 )
 
-var cep_api = "https://viacep.com.br/ws/%v/json"
+var CepAPIBaseURL = "https://viacep.com.br/ws"
 
 func SearchLocationByCEP(cep string) (model.CepApiResponseData, error) {
-	res, err := http.Get(fmt.Sprintf(cep_api, cep))
+	res, err := http.Get(fmt.Sprintf("%s/%s/json", CepAPIBaseURL, cep))
 
 	if err != nil {
 		log.Fatalln(err)
 		return model.CepApiResponseData{}, errors.New("can not find zipcode")
 	}
+
+	if res.StatusCode != http.StatusOK {
+		return model.CepApiResponseData{}, errors.New("can not find zipcode")
+	}
+
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)

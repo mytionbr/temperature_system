@@ -13,6 +13,8 @@ import (
 	"github.com/mytionbr/temperature_system/utils"
 )
 
+var WeatherAPIBaseURL = "http://api.weatherapi.com/v1/current.json"
+
 func WeatherHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cep := r.URL.Query().Get("cep")
@@ -52,7 +54,7 @@ func WeatherHandler(w http.ResponseWriter, r *http.Request) {
 
 	city := via.Localidade
 	cityEscaped := url.QueryEscape(city)
-	reqURL := fmt.Sprintf("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, cityEscaped)
+	reqURL := fmt.Sprintf("%s?key=%s&q=%s", WeatherAPIBaseURL, apiKey, cityEscaped)
 
 	resp, err := http.Get(reqURL)
 
