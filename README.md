@@ -7,6 +7,8 @@ Serviço HTTP em Go que recebe um CEP (8 dígitos), identifica a cidade via ViaC
 ## URL de produção
 
 * [https://weather-service-531929244051.southamerica-east1.run.app/](https://weather-service-531929244051.southamerica-east1.run.app/)
+* **Exemplo**: [https://weather-service-531929244051.southamerica-east1.run.app/weather?cep=01001000](https://weather-service-531929244051.southamerica-east1.run.app/weather?cep=01001000)
+
 
 ## API
 
