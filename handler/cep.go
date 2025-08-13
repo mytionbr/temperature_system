@@ -30,8 +30,8 @@ func CEPHandler(w http.ResponseWriter, r *http.Request) {
 	response, err = service.SearchLocationByCEP(cep)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		newError := utils.NewError(err, http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
+		newError := utils.NewError(err, http.StatusNotFound)
 		json.NewEncoder(w).Encode(newError)
 		return
 	}
